@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
+//@Service
 public class AiService {
 
     @Value("${spring.ai.openai.api-key}")
