@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@layer base {
+    body {
+        @apply bg-slate-950 text-slate-200 antialiased;
+    }
+}
+
+#root {
+    @apply min-h-screen flex flex-col;
+}
+
+
+/* Remote Selection Base Styles */
+.yRemoteSelectionHead {
+    position: absolute;
+    border-left: 2px solid black;
+    /* Fallback */
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.yRemoteSelectionHead::after {
+    /* Base style for the label */
+    /* Content and color will be injected via JS */
+}
+
+@keyframes slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-slide-in {
+    animation: slide-in 0.3s ease-out forwards;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "codecolab-yjs-server",
+  "version": "1.0.0",
+  "description": "Hocuspocus Yjs WebSocket server for CodeColab real-time collaboration",
+  "main": "yjs-server.js",
+  "scripts": {
+    "start": "node yjs-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@hocuspocus/server": "^3.4.4",
+    "ws": "^8.19.0",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.29"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module"
+}
