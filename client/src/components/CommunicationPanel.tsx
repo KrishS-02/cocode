@@ -75,8 +75,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ environmentId, 
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [chatMessages, activeTab]);
 
-    // ─── Peer Management Helpers ───────────────────────────────────────────────
-    
+    // Peer Management Helpers
     const removePeer = useCallback((sessionId: string) => {
         const entry = peersRef.current.find(p => p.sessionId === sessionId);
         if (entry) {
@@ -89,7 +88,6 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ environmentId, 
 
     const createPeer = (targetSessionId: string, stream: MediaStream): SimplePeer.Instance => {
         const peer = new SimplePeer({ initiator: true, trickle: true, config: ICE_SERVERS, stream });
-
         peer.on('signal', (data) => {
             if (wsRef.current?.readyState === WebSocket.OPEN) {
                 wsRef.current.send(JSON.stringify({
@@ -100,23 +98,19 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ environmentId, 
                 }));
             }
         });
-
         peer.on('stream', (remoteStream) => {
             setAudioStreams(prev => [...prev.filter(s => s.id !== targetSessionId), { id: targetSessionId, stream: remoteStream }]);
         });
-
         peer.on('close', () => removePeer(targetSessionId));
         peer.on('error', (err) => {
             console.error('[Voice] Peer error:', targetSessionId, err);
             removePeer(targetSessionId);
         });
-
         return peer;
     };
 
     const addPeer = (senderSessionId: string, incomingSignal: any, stream: MediaStream): SimplePeer.Instance => {
         const peer = new SimplePeer({ initiator: false, trickle: true, config: ICE_SERVERS, stream });
-
         peer.on('signal', (data) => {
             if (wsRef.current?.readyState === WebSocket.OPEN) {
                 wsRef.current.send(JSON.stringify({
@@ -127,26 +121,20 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ environmentId, 
                 }));
             }
         });
-
         peer.on('stream', (remoteStream) => {
             setAudioStreams(prev => [...prev.filter(s => s.id !== senderSessionId), { id: senderSessionId, stream: remoteStream }]);
         });
-
         peer.on('close', () => removePeer(senderSessionId));
         peer.on('error', () => removePeer(senderSessionId));
-
         peer.signal(incomingSignal);
         return peer;
     };
-
-    // ─── Signaling Logic ───────────────────────────────────────────────────────
 
     const handleSignalMessage = useCallback((message: any) => {
         switch (message.type) {
             case 'CONNECTED':
                 mySessionIdRef.current = message.sessionId;
                 break;
-
             case 'VOICE_USERS_LIST':
                 if (!streamRef.current) break;
                 const existingUsers = message.voiceUsers || [];
@@ -158,7 +146,6 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ environmentId, 
                     }
                 });
                 break;
-
             case 'JOIN_VOICE':
                 if (message.senderId === mySessionIdRef.current) break;
                 setVoiceUsers(prev => {
@@ -168,17 +155,12 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ environmentId, 
                     return prev;
                 });
                 break;
-
             case 'SIGNAL':
                 if (!isVoiceActiveRef.current || !streamRef.current) break;
                 const existingEntry = peersRef.current.find(p => p.sessionId === message.senderId);
-
                 if (existingEntry) {
-                    // Handle Glare
                     if (message.data?.type === 'offer' && existingEntry.peer.initiator) {
-                        if ((mySessionIdRef.current || '') < message.senderId) {
-                            return; // I win, keep my offer
-                        }
+                        if ((mySessionIdRef.current || '') < message.senderId) return;
                         existingEntry.peer.destroy();
                         peersRef.current = peersRef.current.filter(p => p.sessionId !== message.senderId);
                     } else {
@@ -186,16 +168,13 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ environmentId, 
                         return;
                     }
                 }
-
                 const answerPeer = addPeer(message.senderId, message.data, streamRef.current);
                 peersRef.current.push({ sessionId: message.senderId, username: message.senderName || 'User', peer: answerPeer });
                 break;
-
             case 'LEAVE_VOICE':
             case 'USER_LEFT':
                 removePeer(message.senderId || message.leaverId);
                 break;
-
             case 'CHAT':
                 setChatMessages(prev => [...prev, {
                     id: `${Date.now()}-${Math.random()}`,
@@ -208,20 +187,16 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ environmentId, 
         }
     }, [user.username, removePeer]);
 
-    // ─── Lifecycle & Actions ───────────────────────────────────────────────────
-
     useEffect(() => {
         const wsUrl = `${WS_BASE_URL}/ws/signal/${environmentId}?token=${token}`;
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
-
         ws.onopen = () => setWsStatus('OPEN');
         ws.onmessage = (e) => handleSignalMessage(JSON.parse(e.data));
         ws.onclose = () => {
             setWsStatus('CLOSED');
             cleanupVoice();
         };
-
         return () => {
             ws.close();
             cleanupVoice();
@@ -293,4 +268,71 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ environmentId, 
                         <h3 className="text-slate-200 font-medium">{isVoiceActive ? 'In Voice' : 'Voice Off'}</h3>
                         
                         <div className="flex gap-2 w-full mt-4">
-                            <button onClick={isVoiceActive ? leaveVoice : joinVoice} className={`flex
+                            <button 
+                                onClick={isVoiceActive ? leaveVoice : joinVoice} 
+                                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${isVoiceActive ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'bg-indigo-500 text-white hover:bg-indigo-600'}`}
+                            >
+                                {isVoiceActive ? 'Leave Voice' : 'Join Voice'}
+                            </button>
+                            {isVoiceActive && (
+                                <button onClick={toggleMute} className={`p-2 rounded-lg transition-colors ${isMuted ? 'bg-red-500/20 text-red-400' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
+                                    {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="w-full mt-6">
+                            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Participants</h4>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-slate-300 text-sm">
+                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span>{user.username} (You)</span>
+                                </div>
+                                {voiceUsers.map(vu => (
+                                    <div key={vu.sessionId} className="flex items-center gap-2 text-slate-300 text-sm">
+                                        <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                                        <span>{vu.username}</span>
+                                        {audioStreams.find(s => s.id === vu.sessionId) && (
+                                            <audio autoPlay ref={el => { if (el) el.srcObject = audioStreams.find(s => s.id === vu.sessionId)!.stream; }} />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {chatMessages.map(msg => (
+                                <div key={msg.id} className={`flex flex-col ${msg.senderId === 'me' ? 'items-end' : 'items-start'}`}>
+                                    <span className="text-[10px] text-slate-500 mb-1">{msg.senderName}</span>
+                                    <div className={`px-3 py-2 rounded-lg text-sm max-w-[90%] break-words ${msg.senderId === 'me' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-200'}`}>
+                                        {msg.content}
+                                    </div>
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+                        <div className="p-3 border-t border-slate-800 bg-slate-900">
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={inputText}
+                                    onChange={(e) => setInputText(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+                                    placeholder="Message..."
+                                    className="w-full bg-slate-800 border-none rounded-lg py-2 pl-3 pr-10 text-sm text-slate-200 focus:ring-1 focus:ring-indigo-500"
+                                />
+                                <button onClick={sendChatMessage} className="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-300">
+                                    <Send size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default CommunicationPanel;
