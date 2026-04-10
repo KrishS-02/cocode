@@ -59,6 +59,7 @@ public class SecurityConfig { // Removed extends WebSecurityConfigurerAdapter (D
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers("/ws/**").permitAll() // Explicitly allow all WS
                         .requestMatchers(
